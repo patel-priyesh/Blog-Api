@@ -8,6 +8,7 @@ let blogSchema = new Schema({
     author:{type:String,required:[true,"Author is required. please Enter Author",]},
     date: { type: Date, default: Date.now },
     category:{type:String,required:[true,"Category is required. please Enter Category",]},
+    authorId:{ type: mongoose.Schema.Types.ObjectId , ref : 'author'}
 })
 
 let BLOG = mongoose.model("blog",blogSchema)

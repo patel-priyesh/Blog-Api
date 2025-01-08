@@ -11,6 +11,8 @@ exports.SECURE = async (req, res, next) => {
         
         let isValidToken = jwt.verify(token, "author");
 
+        req.author = isValidToken.id;
+
         let isuser = await AUTHOR.findById(isValidToken.id);
         
         if (!isuser) throw new Error("User is not login");

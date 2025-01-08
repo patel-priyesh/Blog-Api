@@ -1,10 +1,10 @@
 var BLOG = require('../model/blog')
 const path = require("path")
 const fs = require("fs")
- 
+
 exports.blogcreat = async (req, res, next) => {
     try {
-        let { title, description, author, date, category } = req.body
+        let { title, description, author, date, category  } = req.body
         // console.log("Request body:", req.body);
 
         if (!req.files || req.files.length === 0) {
@@ -15,11 +15,12 @@ exports.blogcreat = async (req, res, next) => {
         }
 
         let blogdatacreat = await BLOG.create({
-            title,  
+            title,
             description,
             author,
             date,
             category,
+            authorId : req.author,
             images: req.files.map(el => el.filename),
         })
 
@@ -40,44 +41,56 @@ exports.blogcreat = async (req, res, next) => {
 
 exports.blogread = async (req, res, next) => {
     try {
-        const blog = await BLOG.find()
+        let findblog;
+        if (req.query.search) {
+            const search = req.query.search;
+            findblog = await BLOG.find({
+                $or: [
+                    { title: { $regex: search, $options: "i" } },
+                    { author: { $regex: search, $options: "i" } },
+                    { category: { $regex: search, $options: "i" } },
+                ],
+            }).populate("authorId");
+        } else {
+            findblog = await BLOG.find({authorId : req.author}).populate("authorId");
+        }
+
         res.status(200).json({
             status: "success...",
-            message: "BLOG read successfull",
-            data: blog
-        })
+            message: "BLOG read successfully",
+            data: findblog,
+        });
     } catch (error) {
         res.status(404).json({
             status: "error",
             message: "BLOG read failed",
-            data: error.message
-        })
+            data: error.message,
+        });
     }
-
-}
+};
 
 exports.blogupdate = async (req, res, next) => {
     try {
-        
+
         let blogtoupdate = await BLOG.findById(req.params.id)
         if (!blogtoupdate) throw new Error("Blog not found");
-        
+
         let updateimage;
-        if(req.files && req.files.length > 0) {
-                
+        if (req.files && req.files.length > 0) {
+
             blogtoupdate.images.map(el => fs.unlinkSync(`./public/blog-image/${el}`));
             updateimage = req.files.map(file => file.filename);
-            }
-            else {
-                updateimage = blogtoupdate.images;
-            }
+        }
+        else {
+            updateimage = blogtoupdate.images;
+        }
         let updateData = { ...req.body, images: updateimage };
 
-        let blogdataupdate = await BLOG.findByIdAndUpdate(req.params.id, updateData,{new : true})
-        
+        let blogdataupdate = await BLOG.findByIdAndUpdate(req.params.id, updateData, { new: true })
+
         res.status(200).json({
             status: "success...",
-            message: "BLOG update successfull", 
+            message: "BLOG update successfull",
             data: blogdataupdate
         })
     } catch (error) {
@@ -94,15 +107,15 @@ exports.blogdelete = async (req, res, next) => {
     try {
         let blogtodelete = await BLOG.findById(req.params.id)
         if (!blogtodelete) throw new Error("Blog not found");
-                
-            blogtodelete.images.map(el => fs.unlinkSync(`./public/blog-image/${el}`));
+
+        blogtodelete.images.map(el => fs.unlinkSync(`./public/blog-image/${el}`));
 
         let blogdatadelete = await BLOG.findByIdAndDelete(req.params.id);
 
         res.status(200).json({
             status: "success",
             message: "BLOG delete successful",
-            data: blogdatadelete    
+            data: blogdatadelete
         });
     } catch (error) {
         res.status(500).json({
