@@ -86,7 +86,13 @@ exports.blogupdate = async (req, res, next) => {
         }
         let updateData = { ...req.body, images: updateimage };
 
-        let blogdataupdate = await BLOG.findByIdAndUpdate(req.params.id, updateData, { new: true })
+        let blogdataupdate = await BLOG.findOneAndUpdate({_id:req.params.id, authorId:req.author},updateData, { new: true })
+        if (!blogdataupdate) {
+            return res.status(400).json({
+                status: "error",
+                message: "Enter Valid Id And Token... Id And Token Is Not Match",
+            });
+        }
 
         res.status(200).json({
             status: "success...",
@@ -100,7 +106,6 @@ exports.blogupdate = async (req, res, next) => {
             data: error.message
         })
     }
-
 }
 
 exports.blogdelete = async (req, res, next) => {
@@ -108,14 +113,19 @@ exports.blogdelete = async (req, res, next) => {
         let blogtodelete = await BLOG.findById(req.params.id)
         if (!blogtodelete) throw new Error("Blog not found");
 
+        
+    let deleteblog = await BLOG.findOneAndDelete({_id:req.params.id,authorId : req.author});
+        if(!deleteblog) {
+            return res.status(400).json({
+                status: "error",
+                message: "Enter Valid Id And Token... Id And Token Is Not Match",
+            })
+        }
         blogtodelete.images.map(el => fs.unlinkSync(`./public/blog-image/${el}`));
-
-        let blogdatadelete = await BLOG.findByIdAndDelete(req.params.id);
 
         res.status(200).json({
             status: "success",
             message: "BLOG delete successful",
-            data: blogdatadelete
         });
     } catch (error) {
         res.status(500).json({
